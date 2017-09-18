@@ -15,6 +15,10 @@ function isUndefined(obj) {
   return typeof obj === 'undefined'
 };
 
+function isNull(obj) {
+  return obj === null;
+}
+
 function isArray(obj) {
   return obj && obj.constructor === Array;
 };
@@ -51,22 +55,24 @@ function createFromHTML (html) {
   return el.children[0];
 }
 
-function matchesSelector (el, sel) {
-  let matches;
-  if (!isUndefined(el.matches)) {
-    matches = el.matches;
-  } else if (!isUndefined(el.matchesSelector)) {
-    matches = el.matchesSelector;
-  } else if (!isUndefined(el.msMatchesSelector)) {
-    matches = el.msMatchesSelector;
-  } else if (!isUndefined(el.webkitMatchesSelector)) {
-    matches = el.webkitMatchesSelector;
-  } else if (!isUndefined(el.mozMatchesSelector)) {
-    matches = el.mozMatchesSelector;
-  } else if (!isUndefined(el.oMatchesSelector)) {
-    matches = el.oMatchesSelector;
+const matches =
+  HTMLElement.prototype.matches ||
+  HTMLElement.prototype.matchesSelector ||
+  HTMLElement.prototype.msMatchesSelector ||
+  HTMLElement.prototype.webkitMatchesSelector ||
+  HTMLElement.prototype.mozMatchesSelector ||
+  HTMLElement.prototype.oMatchesSelector;
+
+function hasClosestSelector(el, sel) {
+  if (!isUndefined(el.closest)) {
+     return !isNull(el.closest(sel));
+  } else if (matches.call(el, sel)) {
+    return true;
+  } else if (isNull(el.parentElement)) {
+    return false;
+  } else {
+    return hasClosestSelector(el.parentElement, sel);
   }
-  return matches.call(el, sel);
 }
 
 const positionRe = /^(.+) (top|left|right|bottom|center|\[[a-z ]+\])$/
@@ -209,7 +215,7 @@ class Step extends Evented {
       }
 
       if (!isUndefined(selector)) {
-        if (matchesSelector(e.target, selector)) {
+        if (hasClosestSelector(e.target, selector)) {
           this.tour.next();
         }
       } else {

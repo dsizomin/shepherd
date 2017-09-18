@@ -36,6 +36,10 @@ function isUndefined(obj) {
   return typeof obj === 'undefined';
 };
 
+function isNull(obj) {
+  return obj === null;
+}
+
 function isArray(obj) {
   return obj && obj.constructor === Array;
 };
@@ -72,22 +76,29 @@ function createFromHTML(html) {
   return el.children[0];
 }
 
-function matchesSelector(el, sel) {
-  var matches = undefined;
-  if (!isUndefined(el.matches)) {
-    matches = el.matches;
-  } else if (!isUndefined(el.matchesSelector)) {
-    matches = el.matchesSelector;
-  } else if (!isUndefined(el.msMatchesSelector)) {
-    matches = el.msMatchesSelector;
-  } else if (!isUndefined(el.webkitMatchesSelector)) {
-    matches = el.webkitMatchesSelector;
-  } else if (!isUndefined(el.mozMatchesSelector)) {
-    matches = el.mozMatchesSelector;
-  } else if (!isUndefined(el.oMatchesSelector)) {
-    matches = el.oMatchesSelector;
+var matches = HTMLElement.prototype.matches || HTMLElement.prototype.matchesSelector || HTMLElement.prototype.msMatchesSelector || HTMLElement.prototype.webkitMatchesSelector || HTMLElement.prototype.mozMatchesSelector || HTMLElement.prototype.oMatchesSelector;
+
+function hasClosestSelector(_x8, _x9) {
+  var _again2 = true;
+
+  _function2: while (_again2) {
+    var el = _x8,
+        sel = _x9;
+    _again2 = false;
+
+    if (!isUndefined(el.closest)) {
+      return !isNull(el.closest(sel));
+    } else if (matches.call(el, sel)) {
+      return true;
+    } else if (isNull(el.parentElement)) {
+      return false;
+    } else {
+      _x8 = el.parentElement;
+      _x9 = sel;
+      _again2 = true;
+      continue _function2;
+    }
   }
-  return matches.call(el, sel);
 }
 
 var positionRe = /^(.+) (top|left|right|bottom|center|\[[a-z ]+\])$/;
@@ -234,7 +245,7 @@ var Step = (function (_Evented) {
         }
 
         if (!isUndefined(selector)) {
-          if (matchesSelector(e.target, selector)) {
+          if (hasClosestSelector(e.target, selector)) {
             _this2.tour.next();
           }
         } else {
